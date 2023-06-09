@@ -1,3 +1,4 @@
+import datetime
 
 from .models import *
 from .infrastructure.enums import *
@@ -5,9 +6,10 @@ from channels.db import database_sync_to_async
 
 
 @database_sync_to_async
-def new_aim(aim_type, data, deadline_time):
-    initial = data
-    initial['aim_type'] = aim_type
+def new_aim(aim_type, data):
+    initial = {}
+    initial['name'], initial['declaration'], initial['aim_type'] = data['name'], data['declaration'], aim_type
+    initial['deadline'] = datetime.datetime.combine(data['deadline_date'], data['deadline_time'])
     aim = Aim.objects.create(**initial)
     aim.save()
 

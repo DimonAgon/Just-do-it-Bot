@@ -21,33 +21,22 @@ import asyncio
 
 @dp.message(Command(commands=['start']))
 async def start_command(message: types.Message):
-    intro = "start" #TODO: add intro text
+    intro = "Зроби діло бот призначений для нагадування,вкажи свою ціль і прямуй до неї. " \
+
 
     await message.answer(intro)
 
 
 @dp.message(Command(commands=['help']))
 async def help_command(message: types.Message):
-    HELPFUL_REPLY = "help" #TODO: add intro text
+    HELPFUL_REPLY = f"/start– знайомство із ботом" \
+                    f"\n/help–допомога" \
+                    f"\n/add_task– щоб додати нагадування із справ (щось просте, нап. помити кота)" \
+                    f"\n/add_objective– додати ціль на перспективу (накшталт купити автомобіль)" \
+                    f"\n/cancel_add– якщо передумали додати ціль" \
+                    f"\n/todo_list, /todo, /td– команда виклику списку справ і цілей, щоб отримати незроблені, допишіть todo, для завершених допишіть done, аби побачити всі– пишіть all, за замовчуванням мод– це all"
 
     await message.answer(HELPFUL_REPLY)
-
-
-@dp.message(Command(commands=['add_aim']))
-async def add_objective_command(message: types.Message, forms: FormsManager):
-    aim_type_str = AimType.OBJECTIVE.value
-    callback_success_text = f"+ {aim_type_str})"
-    callback_fail_text = f"Помилка, {aim_type_str} не вдалося додати("
-
-    try:
-        await forms.show(['aimform'])
-        data = await forms.get_data(AimForm)
-        new_aim(data)
-        message.answer(callback_success_text)
-
-    except Exception as e:
-        await message.answer(callback_fail_text)
-        logging.error(f"aim adding failed, error: {e}")
 
 
 def notifications_times(add_datetime, deadline):
@@ -64,23 +53,21 @@ async def notify(aim: models.Model, user_id):
         asyncio.sleep((period-now).seconds)
         bot.send_message(user_id, aim.name)
 
+
+@dp.message(Command(commands=['add_objective']))
+async def add_objective_command(message: types.Message, forms: FormsManager):
+   await forms.show('objectiveform')
+
+
 @dp.message(Command(commands=['add_task']))
 async def add_task_command(message: types.Message, forms: FormsManager):
-    aim_type_str = AimType.TASK.value
-    callback_success_text = f"+ {aim_type_str})"
-    callback_fail_text = f"Помилка, {aim_type_str} не вдалося додати("
+   await forms.show('taskform')
 
-    try:
-        await forms.show('aiomform')
-        await forms.show('taskdeadlinetime')
-        data = await forms.get_data(AimForm)
-        deadline_time = await forms.get_data(TaskDeadlineTime)
-        new_aim(data, deadline_time)
-        message.answer(callback_success_text)
 
-    except Exception as e:
-        await message.answer(callback_fail_text)
-        logging.error(f"aim adding failed, error: {e}")
+@dp.message(Command(commands=['cancel_add']))
+async def cancel_add_command(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer('передумали🙃')
 
 
 @dp.message(Command(commands='todo, todo_list, td'))
