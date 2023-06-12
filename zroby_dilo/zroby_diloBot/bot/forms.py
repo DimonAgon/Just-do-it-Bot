@@ -8,6 +8,7 @@ from aiogram_forms import dispatcher, Form, FormsManager, fields
 from aiogram_forms.errors import ValidationError
 
 from .views import *
+from .handlers.notifier import notify
 
 import datetime
 
@@ -37,32 +38,8 @@ declaration_field = fields.TextField("Опишіть ціль")
 deadline_date_field = fields.TextField("Який дедлайн за датою?", validators=[validate_date_format])
 
 
-@dispatcher.register('objectiveform')
-class ObjectiveForm(Form):
-    name = name_field
-    declaration = declaration_field
-    deadline_date = deadline_date_field
-
-    @classmethod
-    async def callback(cls, message: types.Message, forms: FormsManager, **data) -> None:
-        aim_type_str = AimType.OBJECTIVE.value
-        callback_success_text = f"+ {aim_type_str})"
-        callback_fail_text = f"Помилка, {aim_type_str} не вдалося додати("
-
-        try:
-            data = await forms.get_data(ObjectiveForm)
-            await new_aim(AimType.OBJECTIVE, data)
-            await message.answer(callback_success_text)
-
-        except Exception as e:
-            await message.answer(callback_fail_text)
-            logging.error(f"aim adding failed, error: {e}")
-
-
-
-
-@dispatcher.register('taskform')
-class TaskForm(Form):
+@dispatcher.register('aimform')
+class AimForm(Form):
     name = name_field
     declaration = declaration_field
     deadline_date = deadline_date_field
@@ -70,15 +47,17 @@ class TaskForm(Form):
 
     @classmethod
     async def callback(cls, message: types.Message, forms: FormsManager, **data) -> None:
-        aim_type_str = AimType.TASK.value
-        callback_success_text = f"+ {aim_type_str})"
-        callback_fail_text = f"Помилка, {aim_type_str} не вдалося додати("
+        callback_success_text = f"+ ціль)"
+        callback_fail_text = f"Помилка, ціль не вдалося додати("
 
         try:
-            data = await forms.get_data(TaskForm)
-            await new_aim(AimType.TASK, data)
+            data = await forms.get_data(AimForm)
+            user_id = message.from_user.id
+            aim = await new_aim(data, user_id)
             await message.answer(callback_success_text)
+            await notify(aim)
 
         except Exception as e:
             await message.answer(callback_fail_text)
             logging.error(f"aim adding failed, error: {e}")
+
