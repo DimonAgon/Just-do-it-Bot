@@ -2,6 +2,7 @@ import asyncio
 from django.core.management.base import BaseCommand
 from bot.handlers.dispatcher import dp, bot
 from zroby_diloBot import settings
+from ...handlers.notifier import Notifier
 
 
 class Command(BaseCommand):
@@ -30,4 +31,5 @@ class Command(BaseCommand):
             loop.create_task(self.debug_async())
 
         loop.create_task(self.handle_async())
+        loop.create_task(Notifier.track())
         loop.run_forever()

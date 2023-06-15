@@ -8,7 +8,6 @@ from aiogram_forms import dispatcher, Form, FormsManager, fields
 from aiogram_forms.errors import ValidationError
 
 from .views import *
-from .handlers.notifier import notify
 
 import datetime
 
@@ -54,8 +53,8 @@ class AimForm(Form):
             data = await forms.get_data(AimForm)
             user_id = message.from_user.id
             aim = await new_aim(data, user_id)
+            await initiate_notifications(aim)
             await message.answer(callback_success_text)
-            await notify(aim)
 
         except Exception as e:
             await message.answer(callback_fail_text)

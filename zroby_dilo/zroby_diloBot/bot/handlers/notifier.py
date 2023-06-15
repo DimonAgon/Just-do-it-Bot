@@ -1,34 +1,61 @@
 import asyncio
+import logging
 
 from .dispatcher import bot
-from ..views import aim_done
-from ..models import Aim, AimStatus
+from ..models import Aim, AimStatus, Notification
 
 from typing import Type
 
 import datetime
 from django.utils import timezone
 
-def notifications_times(add_datetime, deadline):
-    time_diff = deadline - add_datetime
-    time_diff_days = time_diff.seconds/3600/24
-    notification_times = time_diff_days/3
-    return 1 if notification_times <= 1 else 2 if notification_times <= 3 else 3
-
-async def notify(aim: Type[Aim]):
-    now = timezone.make_aware(datetime.datetime.now())
-    add_datetime, deadline = aim.add_datetime, aim.deadline
-    time_difference = deadline - now
-    times = notifications_times(add_datetime, deadline)
-
-    if times == 1:
-        await asyncio.sleep(time_difference.seconds/2)
-        await bot.send_message(aim.external_id, aim.name)
+from channels.db import database_sync_to_async
 
 
-    else:
-        for t in range(times):
-            await asyncio.sleep(time_difference.seconds/times)
-            await bot.send_message(aim.external_id, aim.name)
+class Notifier:
 
-    await aim_done(aim)
+    @database_sync_to_async
+    def remove_fatigued_notifications(self, notification_queue):
+        for notification in notification_queue:
+            aim = notification.aim
+
+            notification.delete()
+
+            if not Notification.objects.filter(aim=aim):
+                aim.status = AimStatus.DONE
+                aim.save()
+
+
+    @classmethod
+    async def notify(cls, notification_queue):
+        for notification in notification_queue:
+            user_id = notification.aim.external_id
+            await bot.send_message(user_id, notification.aim.name)
+            logging.info(f'notfication {notification.id} sent to {user_id}')
+
+
+    @database_sync_to_async
+    def notifications_queue(self):
+        now = timezone.make_aware(datetime.datetime.now())
+        notifications = Notification.objects.all()
+        nq = []
+
+        for notification in notifications:
+
+            if notification.notify_datetime <= now:
+                aim = notification.aim
+                nq.append(notification)
+
+
+        return nq
+
+
+    @classmethod
+    async def track(cls):
+        while True:
+            await asyncio.sleep(59.99)
+            nq = await cls.notifications_queue()
+            await cls.notify(nq)
+            await cls.remove_fatigued_notifications(nq)
+
+

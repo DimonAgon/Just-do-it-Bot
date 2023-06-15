@@ -21,18 +21,20 @@ import asyncio
 
 @dp.message(Command(commands=['start']))
 async def start_command(message: types.Message):
-    intro = "Зроби діло бот призначений для нагадування, вкажи свою ціль і прямуй до неї. " \
+    intro = "Зроби-діло бот призначений для нагадування, вкажи свою ціль і прямуй до неї. Кличте /help для інструктажу"
+    kb = [[types.KeyboardButton(text='/add_aim')]]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
+    await message.answer(intro, reply_markup=keyboard)
 
-    await message.answer(intro)
 
 
 @dp.message(Command(commands=['help']))
 async def help_command(message: types.Message):
     HELPFUL_REPLY = f"/start– знайомство із ботом" \
                     f"\n/help–допомога" \
-                    f"\n/add_aim– щоб додати нагадування до цілі, назву вводьте в імперативі" \
-                    f"\n/cancel_add– якщо передумали додати ціль" \
+                    f"\n/add_aim, add– щоб додати нагадування до цілі, назву вводьте в імперативі" \
+                    f"\n/cancel_add, cancel– якщо передумали додати ціль" \
                     f"\n/todo_list, /todo, /td– команда виклику списку справ і цілей," \
                     f" щоб отримати незроблені, допишіть todo," \
                     f" для завершених допишіть done," \
@@ -42,15 +44,21 @@ async def help_command(message: types.Message):
     await message.answer(HELPFUL_REPLY)
 
 
-@dp.message(Command(commands=['add_aim']))
+@dp.message(Command(commands=['add_aim', 'add']))
 async def add_aim_command(message: types.Message, forms: FormsManager):
-   await forms.show('aimform')
+    await forms.show('aimform')
 
 
-@dp.message(Command(commands=['cancel_add']))
+@dp.message(Command(commands=['cancel_add', 'cancel']))
 async def cancel_add_command(message: types.Message, state: FSMContext):
-    await state.clear()
-    await message.answer('передумали🙃')
+    if state.get_state():
+        state.clear()
+        await message.answer('передумали🙃')
+
+    else:
+        return
+
+
 
 
 @dp.message(Command(commands=['todo', 'todo_list', 'td']), AftercommandFullCheck(allow_no_argument=True, modes=TodoListModes))

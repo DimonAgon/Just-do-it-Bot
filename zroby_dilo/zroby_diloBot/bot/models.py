@@ -13,3 +13,8 @@ class Aim(models.Model):
     deadline = models.DateTimeField(verbose_name='Дедлайн')
     status = models.CharField(verbose_name='Cтатус', choices=AimStatus.choices, max_length=11)
     external_id = models.IntegerField()
+
+
+class Notification(models.Model):
+    aim = models.ForeignKey(to='Aim', verbose_name='Ціль', on_delete=models.CASCADE)
+    notify_datetime = models.DateTimeField(verbose_name='Час нагадування')
